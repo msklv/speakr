@@ -89,18 +89,32 @@ COPY . .
 # Create necessary directories
 RUN mkdir -p /data/uploads /data/instance && chmod 755 /data/uploads /data/instance
 
+# KCS hardening: run as non-root (was 'Image user should not be root').
+RUN useradd --system --create-home --home-dir /home/speakr --shell /usr/sbin/nologin speakr \
+    && chown -R speakr:speakr /data \
+    && chmod 755 /data
+
 # Set environment variables
 ENV FLASK_APP=src/app.py
 ENV SQLALCHEMY_DATABASE_URI=sqlite:////data/instance/transcriptions.db
 ENV UPLOAD_FOLDER=/data/uploads
 ENV PYTHONPATH=/app
 ENV HF_HOME=/data/instance/huggingface
+ENV HOME=/home/speakr
 
 # Add entrypoint script
 COPY scripts/docker-entrypoint.sh /usr/local/bin/
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
+# Drop privileges: everything from here runs as the unprivileged user.
+USER speakr
+
 EXPOSE 8899
+
+# KCS hardening: liveness check (no curl in slim -> lightweight urllib probe;
+# the app redirects / to login, accept any HTTP response as "up").
+HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
+  CMD ["python", "-c", "import urllib.request;from urllib.error import HTTPError\ntry: urllib.request.urlopen('http://127.0.0.1:8899/',timeout=5)\nexcept HTTPError: pass"]
 
 ENTRYPOINT ["docker-entrypoint.sh"]
 # Threaded workers: streaming responses (chat/Inquire SSE, audio/video range

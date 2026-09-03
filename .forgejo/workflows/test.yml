@@ -14,13 +14,18 @@ on:
   pull_request:
   workflow_dispatch:
 
+# KCS hardening: least-privilege default token (was 'Missing job permissions settings').
+permissions:
+  contents: read
+
 jobs:
   python-tests:
     runs-on: ubuntu-latest
 
     services:
       postgres:
-        image: postgres:16
+        # KCS hardening: pinned patch tag (was 'No version pinning' on postgres:16).
+        image: postgres:16.8
         env:
           POSTGRES_USER: speakr
           POSTGRES_PASSWORD: speakr
