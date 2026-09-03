@@ -48,19 +48,14 @@ jobs:
 
   osv-scan:
     name: osv-scanner (OSV.dev)
-    runs-on: ubuntu-latest
     permissions:
       actions: read
       security-events: write
       contents: read
-    steps:
-      - uses: actions/checkout@v5
-
-      # osv-scanner-action's composite entry is not meant to be used directly;
-      # invoke the official reusable workflow instead (self-uploads SARIF).
-      - uses: google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@v2.5.1
-        with:
-          scan-args: |-
-            --include-git-root
-            -r
-            ./
+    # Reusable workflows are invoked whole as a JOB (job-level uses), not a step.
+    uses: google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@v2.5.1
+    with:
+      scan-args: |-
+        --include-git-root
+        -r
+        ./
