@@ -41,7 +41,9 @@ jobs:
           context: .
           platforms: linux/amd64
           push: true
-          tags: ${{ env.REGISTRY }}/${{ env.IMAGE }}:0.10.5-alpha-lite-fix
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE }}:0.10.5-alpha-lite-fix
+            ${{ env.REGISTRY }}/${{ env.IMAGE }}:0.10.5-alpha-lite-2
           build-args: |
             PRODUCTION=1
             LIGHTWEIGHT=1
