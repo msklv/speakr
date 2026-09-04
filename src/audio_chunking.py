@@ -1054,7 +1054,11 @@ def extract_speaker_samples(
             if end is None:
                 end = getattr(seg, 'end', None)
 
-        if speaker == 'Unknown' or start is None or end is None:
+        # Skip segments with a missing/falsy speaker label (e.g. OpenASR may
+        # return `speaker: null` on some segments of a diarized chunk). Treating
+        # None as a real label would later crash `sorted(speaker_segments.keys())`
+        # mixing str and None (`'<' not supported between 'str' and 'NoneType'`).
+        if not speaker or speaker == 'Unknown' or start is None or end is None:
             continue
 
         if speaker not in speaker_segments:

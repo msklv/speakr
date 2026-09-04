@@ -40,10 +40,10 @@ class OpenASRTranscriptionConnector(BaseTranscriptionConnector):
     PROVIDER_NAME = "openasr"
 
     SPECIFICATIONS = ConnectorSpecifications(
-        # ~90 MiB hard upload cap on the speakr side: forces size-based chunking
-        # (chunks ≈ 72 MB after the 0.8 safety factor), keeping every chunk under
+        # ~95 MiB hard upload cap on the speakr side: forces size-based chunking
+        # (chunks ≈ 76 MiB after the 0.8 safety factor), keeping every chunk under
         # the ~100 MB gateway body limit → avoids 413 Payload Too Large.
-        max_file_size_bytes=int(90 * 1024 * 1024),
+        max_file_size_bytes=int(95 * 1024 * 1024),
         max_duration_seconds=None,
         handles_chunking_internally=True,
     )
