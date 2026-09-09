@@ -98,6 +98,28 @@ COPY --from=builder /install /usr/local
 # back — we never run apt at runtime, so this is acceptable.
 RUN apt-get purge --allow-remove-essential -y perl-base
 
+# KCS hardening: purge the util-linux family + sqlite/ncurses/gzip leaves of
+# the base image (42 of the 48 High findings; all fixedVersion:null upstream —
+# nothing to upgrade TO). Verified in-container: apt resolves this group
+# cleanly (individual purges break), 14 pkgs removed, dpkg --audit clean,
+# bash/coreutils/dpkg/gunicorn all survive (their libs — libtinfo6,
+# libsystemd0, libudev1, libacl1 — are deliberately kept). psycopg2/postgres
+# path verified; `import sqlite3` FAILS after this — the -lite image is
+# Postgres-only (see SQLALCHEMY_DATABASE_URI below).
+RUN apt-get purge --allow-remove-essential -y \
+        util-linux bsdutils mount login \
+        libmount1 libblkid1 libuuid1 libsmartcols1 liblastlog2-2 \
+        libsqlite3-0 libncursesw6 ncurses-base ncurses-bin gzip \
+    && rm -rf /var/lib/apt/lists/*
+
+# KCS hardening: bump base setuptools (79.0.1) to 81.0.0. KCS flags the *vendored*
+# wheel 0.45.1 / jaraco.context 5.3.0 dist-info inside setuptools/_vendor;
+# 81.0.0 vendors wheel 0.46.3 + jaraco.context 6.1.0 (both >= the CVE fixes) and
+# still ships pkg_resources, which numpy/sklearn/scipy/werkzeug/pytz/babel import.
+# (setuptools' own CVE-2025-47273 is fixed at 78.1.1; 83.x would drop
+# pkg_resources and break the app stack, hence the ceiling at 81.)
+RUN pip install --no-cache-dir "setuptools==81.0.0"
+
 # Copy downloaded vendor assets from builder
 COPY --from=builder /app/static/vendor /app/static/vendor
 

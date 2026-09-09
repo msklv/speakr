@@ -5,6 +5,20 @@ set -e
 mkdir -p /data/uploads /data/instance
 chmod 755 /data/uploads /data/instance
 
+# KCS hardening note: the -lite image purges libsqlite3-0 (KCS High findings),
+# so a sqlite:// URI cannot work there. Fail with a clear, actionable message
+# instead of an ImportError from deep inside SQLAlchemy. No-op on the full
+# image and on any Postgres URI (sqlite3 import is only probed for sqlite URIs).
+if [[ "${SQLALCHEMY_DATABASE_URI:-}" == sqlite:* ]]; then
+    if ! python -c "import sqlite3" 2>/dev/null; then
+        echo "ERROR: SQLALCHEMY_DATABASE_URI points at SQLite, but this image" >&2
+        echo "       has no SQLite support (KCS hardening purged libsqlite3-0)." >&2
+        echo "       Set SQLALCHEMY_DATABASE_URI to a PostgreSQL URI" >&2
+        echo "       (postgresql://user:pass@host:port/dbname)." >&2
+        exit 1
+    fi
+fi
+
 # Initialize the database if it doesn't exist
 if [ ! -f /data/instance/transcriptions.db ]; then
     echo "Database doesn't exist. Creating new database..."
