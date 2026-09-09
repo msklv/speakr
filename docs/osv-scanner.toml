@@ -1,0 +1,18 @@
+# OSV-Scanner exceptions for docs/ lockfiles (config does NOT propagate from
+# the repo root — see google.github.io/osv-scanner/configuration/).
+# Docs-build dependencies never ship in any container image; these findings
+# cannot reach any runtime. See root osv-scanner.toml for full rationale.
+
+[[PackageOverrides]]
+name = "pillow"
+ecosystem = "PyPI"
+vulnerability.ignore = true
+effectiveUntil = 2027-03-09
+reason = "docs/requirements-docs.txt only (MkDocs image optimization); never installed into any container image."
+
+[[PackageOverrides]]
+name = "idna"
+ecosystem = "PyPI"
+vulnerability.ignore = true
+effectiveUntil = 2027-03-09
+reason = "docs/requirements-docs.txt transitive only (docs build never ships in any image)."

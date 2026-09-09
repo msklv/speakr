@@ -1,0 +1,57 @@
+# OSV-Scanner exceptions (https://google.github.io/osv-scanner/configuration/)
+#
+# Scope: the CI security-scan workflow scans *all* requirements files in the
+# repo, but the shipped product image (-lite, LIGHTWEIGHT=1 — the one KCS also
+# scans) installs ONLY requirements.txt. The packages below arrive exclusively
+# from:
+#   * docs/requirements-docs.txt        — MkDocs build dependencies; never
+#                                         installed into any container image.
+#   * requirements-embeddings.txt       — sentence-transformers==2.7.0 and its
+#                                         transitive pillow/torch/transformers/
+#                                         requests; excluded from the -lite
+#                                         image by the LIGHTWEIGHT build arg.
+# Findings on the runtime set (requirements.txt: httpx2/httpcore2/scipy) are
+# fixed by pins in requirements.txt, NOT silenced here.
+#
+# effectiveUntil is set to force re-triage of the full (embeddings) build
+# dependency stack; bumping it requires reviewing upstream bumps (notably
+# sentence-transformers 2.7.0 -> 3.x) rather than silently extending.
+
+# pillow — doc-build transitive + embeddings transitive (frozen 2.7.0 chain)
+[[PackageOverrides]]
+name = "pillow"
+ecosystem = "PyPI"
+vulnerability.ignore = true
+effectiveUntil = 2027-03-09
+reason = "Not in the -lite runtime image: docs/requirements-docs.txt (docs build only) and transitive of sentence-transformers==2.7.0 (excluded via LIGHTWEIGHT=1). Full-image track re-triage."
+
+# transformers / torch — transitive of sentence-transformers==2.7.0 (embeddings only)
+[[PackageOverrides]]
+name = "transformers"
+ecosystem = "PyPI"
+vulnerability.ignore = true
+effectiveUntil = 2027-03-09
+reason = "Not in the -lite runtime image (LIGHTWEIGHT=1 skips requirements-embeddings.txt); frozen sentence-transformers 2.7.0 chain, bump is a separate breaking change."
+
+[[PackageOverrides]]
+name = "torch"
+ecosystem = "PyPI"
+vulnerability.ignore = true
+effectiveUntil = 2027-03-09
+reason = "Not in the -lite runtime image (LIGHTWEIGHT=1 skips requirements-embeddings.txt); frozen sentence-transformers 2.7.0 chain."
+
+# requests — transitive of the embeddings/doc stacks only (app uses httpx/httpx2)
+[[PackageOverrides]]
+name = "requests"
+ecosystem = "PyPI"
+vulnerability.ignore = true
+effectiveUntil = 2027-03-09
+reason = "Not a direct runtime dependency of requirements.txt; arrives via embeddings/doc stacks excluded from the -lite image. (scripts/download_offline_deps.py is build-time only.)"
+
+# idna — doc stack only
+[[PackageOverrides]]
+name = "idna"
+ecosystem = "PyPI"
+vulnerability.ignore = true
+effectiveUntil = 2027-03-09
+reason = "docs/requirements-docs.txt transitive only (docs build never ships in any image)."
