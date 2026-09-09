@@ -80,6 +80,22 @@ COPY --from=ffmpeg-stage /usr/local/bin/ffprobe /usr/local/bin/ffprobe
 # Copy installed Python packages from builder
 COPY --from=builder /install /usr/local
 
+# KCS hardening: strip boto3/botocore API-example docs from the runtime image.
+# They ship literal fake AWS key material ("AKIAIO...MPLE", account IDs) that
+# KCS reports as 2 critical + 2 high "sensitive data" findings; the files are
+# pure documentation (.rst/.json examples) and are never imported at runtime.
+RUN find /usr/local/lib/python3.11/site-packages -name "examples-1.json" -delete \
+    && rm -rf /usr/local/lib/python3.11/site-packages/boto3/examples
+
+# KCS hardening: purge perl-base (3 Criticals incl. exploited CVE-2026-8376,
+# 5 Highs, no Debian fix available). dpkg reverse-deps on it are empty in this
+# image and nothing in the runtime path calls perl: entrypoint is bash,
+# update-ca-certificates is /bin/sh, ffmpeg/ffprobe are static binaries.
+# It is an Essential package, hence --allow-remove-essential; the trade-off is
+# that `apt install/upgrade` *inside a running container* may try to pull it
+# back — we never run apt at runtime, so this is acceptable.
+RUN apt-get purge --allow-remove-essential -y perl-base
+
 # Copy downloaded vendor assets from builder
 COPY --from=builder /app/static/vendor /app/static/vendor
 

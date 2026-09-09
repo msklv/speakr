@@ -48,6 +48,7 @@ tests/
 .claude/
 .migrate/
 .github/
+.forgejo/
 
 # IDE and editor files
 .idea/

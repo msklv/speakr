@@ -45,6 +45,7 @@ jobs:
             ${{ env.REGISTRY }}/${{ env.IMAGE }}:0.10.5-alpha-lite-fix
             ${{ env.REGISTRY }}/${{ env.IMAGE }}:0.10.5-alpha-lite-fix2
             ${{ env.REGISTRY }}/${{ env.IMAGE }}:0.10.5-alpha-lite-fix3
+            ${{ env.REGISTRY }}/${{ env.IMAGE }}:0.10.5-alpha-lite-fix4
           build-args: |
             PRODUCTION=1
             LIGHTWEIGHT=1
