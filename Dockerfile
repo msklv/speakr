@@ -17,7 +17,14 @@ COPY requirements.txt requirements-embeddings.txt constraints.txt ./
 RUN pip install --no-cache-dir --prefix=/install -c constraints.txt -r requirements.txt && \
     if [ "$LIGHTWEIGHT" = "0" ]; then \
         pip install --no-cache-dir --prefix=/install -c constraints.txt -r requirements-embeddings.txt; \
-    fi
+    fi && \
+    find /install -name "examples-1.json" -delete && \
+    rm -rf /install/lib/python3.11/site-packages/boto3/examples
+# KCS: fake AWS keys ("AKIAIO...MPLE") ship inside boto3/botocore doc examples.
+# They must be removed HERE (builder) so COPY --from=builder never puts them
+# into a final-image layer: KCS scans secret rules against raw layer tarballs,
+# so a delete in the runtime stage leaves the blobs scannable even though the
+# merged rootfs is clean (observed on fix5: 2 crit + 2 high still flagged).
 
 # Download vendor assets (JS/CSS/fonts)
 RUN mkdir -p /app/static/vendor
@@ -78,14 +85,9 @@ COPY --from=ffmpeg-stage /usr/local/bin/ffmpeg /usr/local/bin/ffmpeg
 COPY --from=ffmpeg-stage /usr/local/bin/ffprobe /usr/local/bin/ffprobe
 
 # Copy installed Python packages from builder
+# (KCS: boto3/botocore doc examples with fake AWS keys are already stripped in
+# the builder stage above — never here, so they never enter a final-image layer.)
 COPY --from=builder /install /usr/local
-
-# KCS hardening: strip boto3/botocore API-example docs from the runtime image.
-# They ship literal fake AWS key material ("AKIAIO...MPLE", account IDs) that
-# KCS reports as 2 critical + 2 high "sensitive data" findings; the files are
-# pure documentation (.rst/.json examples) and are never imported at runtime.
-RUN find /usr/local/lib/python3.11/site-packages -name "examples-1.json" -delete \
-    && rm -rf /usr/local/lib/python3.11/site-packages/boto3/examples
 
 # KCS hardening: purge perl-base (3 Criticals incl. exploited CVE-2026-8376,
 # 5 Highs, no Debian fix available). dpkg reverse-deps on it are empty in this
